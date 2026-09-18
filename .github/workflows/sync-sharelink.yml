@@ -32,7 +32,7 @@ jobs:
       - name: Download workbook
         env:
           SHARE_URL: ${{ secrets.SHARE_URL }}
-          DEST_PATH: data/report.xlsx
+          DEST_PATH: data/AI_Project_Register.xlsx
           EXPORT_CSV: "true"
         run: python scripts/sync_sharelink.py
 
