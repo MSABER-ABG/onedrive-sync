@@ -1,0 +1,52 @@
+name: Sync Excel via share link
+
+on:
+  schedule:
+    # Hourly. See README: a private repo has 2,000 free Actions minutes per
+    # month, and GitHub rounds every run up to a full minute.
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-sharelink
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install requests pandas openpyxl
+
+      - name: Download workbook
+        env:
+          SHARE_URL: ${{ secrets.SHARE_URL }}
+          # Change this to the name you want inside the repository.
+          DEST_PATH: data/report.xlsx
+          EXPORT_CSV: "true"
+        run: python scripts/sync_sharelink.py
+
+      - name: Commit changes if the file was updated
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "No changes detected. Nothing to commit."
+            exit 0
+          fi
+          git add -A
+          git commit -m "chore: sync workbook from OneDrive ($(date -u '+%Y-%m-%d %H:%M UTC'))"
+          git push
